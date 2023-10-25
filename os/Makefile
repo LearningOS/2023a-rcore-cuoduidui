@@ -28,6 +28,8 @@ DISASM ?= -x
 build: env $(KERNEL_BIN)
 
 env:
+	rustup toolchain remove nightly
+	rustup toolchain install nightly
 	(rustup target list | grep "riscv64gc-unknown-none-elf (installed)") || rustup target add $(TARGET)
 	cargo install cargo-binutils
 	rustup component add rust-src
@@ -59,6 +61,7 @@ run-inner: build
 		-nographic \
 		-bios $(BOOTLOADER) \
 		-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA)
+		-s -S
 
 debug: build
 	@tmux new-session -d \
