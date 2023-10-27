@@ -46,6 +46,7 @@ fn clear_bss() {
         fn ebss();
     }
     unsafe {
+        // 清空一块内存，找到待加载应用二进制镜像的位置，并复制其到正确位置
         core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
             .fill(0);
     }

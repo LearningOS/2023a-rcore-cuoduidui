@@ -31,6 +31,7 @@ pub fn init() {
         fn __alltraps();
     }
     unsafe {
+        // 将stvec设置为Direct模式指向其地址
         stvec::write(__alltraps as usize, TrapMode::Direct);
     }
 }
