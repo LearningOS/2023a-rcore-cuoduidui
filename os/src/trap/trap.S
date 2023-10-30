@@ -1,3 +1,5 @@
+# https://blog.csdn.net/ruanke77/article/details/ 汇编指令解析
+# altmacro 命令解析 https://blog.csdn.net/weixin_38498942/article/details/122434462
 .altmacro
 .macro SAVE_GP n
     sd x\n, \n*8(sp)
@@ -9,6 +11,9 @@
     .globl __alltraps
     .globl __restore
     .align 2
+# .align就是在编译出来的机器码里面插入零
+# .align 2 就是插两个零， 必须是2的倍数
+# 保存
 __alltraps:
     csrrw sp, sscratch, sp
     # now sp->kernel stack, sscratch->user stack
@@ -20,6 +25,8 @@ __alltraps:
     sd x3, 3*8(sp)
     # skip tp(x4), application does not use it
     # save x5~x31
+    # .rept 重复执行代码块number_of_times次
+    # set 设置变化的值，与.equ一样	
     .set n, 5
     .rept 27
         SAVE_GP %n
@@ -36,7 +43,7 @@ __alltraps:
     # set input argument of trap_handler(cx: &mut TrapContext)
     mv a0, sp
     call trap_handler
-
+# 恢复
 __restore:
     # case1: start running app by __restore
     # case2: back to U after handling trap
