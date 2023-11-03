@@ -30,6 +30,10 @@ static USER_STACK: UserStack = UserStack {
 
 impl KernelStack {
     fn get_sp(&self) -> usize {
+//         // 返回指向切片缓冲区的原始指针。
+// 调用者必须确保切片比这个函数返回的指针长，否则它将最终指向垃圾。
+// 调用者还必须确保永远不会使用此指针或从它派生的任何指针写入指针(非传递性)指向的内存(除了在 UnsafeCell 内)。如果您需要改变切片的内容，请使用 as_mut_ptr 。
+// 修改此切片引用的容器可能会导致其缓冲区被重新分配，这也会使指向它的任何指针无效。
         self.data.as_ptr() as usize + KERNEL_STACK_SIZE
     }
     pub fn push_context(&self, cx: TrapContext) -> &'static mut TrapContext {
@@ -80,6 +84,7 @@ impl AppManager {
             self.app_start[app_id + 1] - self.app_start[app_id],
         );
         let app_dst = core::slice::from_raw_parts_mut(APP_BASE_ADDRESS as *mut u8, app_src.len());
+        //app复制到内存
         app_dst.copy_from_slice(app_src);
         // Memory fence about fetching the instruction memory
         // It is guaranteed that a subsequent instruction fetch must
@@ -87,6 +92,7 @@ impl AppManager {
         // Therefore, fence.i must be executed after we have loaded
         // the code of the next app into the instruction memory.
         // See also: riscv non-priv spec chapter 3, 'Zifencei' extension.
+        //硬件三级缓存 屏障
         asm!("fence.i");
     }
 
@@ -106,6 +112,9 @@ lazy_static! {
                 fn _num_app();
             }
             let num_app_ptr = _num_app as usize as *const usize;
+            // 对 num_app_ptr 中的值执行易失性读取而不移动它。这使num_app_ptr 中的内存保持不变。
+// 易失性操作旨在作用于 I/O 内存，并保证编译器不会在其他易失性操作中忽略或重新排序。
+// read_volatile（）https://vimsky.com/examples/usage/rust-std-ptr-fn.read_volatile-rt.html
             let num_app = num_app_ptr.read_volatile();
             let mut app_start: [usize; MAX_APP_NUM + 1] = [0; MAX_APP_NUM + 1];
             let app_start_raw: &[usize] =
